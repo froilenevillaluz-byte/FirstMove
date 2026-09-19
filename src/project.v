@@ -1,32 +1,16 @@
-/*
- * Tiny Tapeout - Rock, Paper, Scissors vs the Chip
- * -------------------------------------------------
- * ui_in[1:0] = your move: 01=Rock, 10=Paper, 11=Scissors (00=none)
- * ui_in[2]   = PLAY button: press to lock in your move against the chip
- *
- * uo_out[1:0] = your move, echoed back
- * uo_out[3:2] = the chip's move (same encoding)
- * uo_out[5:4] = result: 00=tie, 01=you win, 10=you lose
- * uo_out[7:6] = unused
- *
- * uio_out[3:0] = running win count   (saturates at 15)
- * uio_out[7:4] = running loss count  (saturates at 15)
- */
-
 `default_nettype none
 
-module tt_um_rock_paper_scissors (
-    input  wire [7:0] ui_in,    // Dedicated inputs
-    output wire [7:0] uo_out,   // Dedicated outputs
-    input  wire [7:0] uio_in,   // IOs: input path
-    output wire [7:0] uio_out,  // IOs: output path
-    output wire [7:0] uio_oe,   // IOs: enable path (active high)
-    input  wire       ena,      // goes high when design is powered/selected
-    input  wire       clk,      // clock
-    input  wire        rst_n    // active-low reset
+module tt_um_froileneee_rps (
+    input  wire [7:0] ui_in,   
+    output wire [7:0] uo_out,   
+    input  wire [7:0] uio_in,  
+    output wire [7:0] uio_out, 
+    output wire [7:0] uio_oe,   
+    input  wire       ena,      
+    input  wire       clk,      
+    input  wire        rst_n    
 );
 
-    // Bidirectional pins are used as outputs here for the score counters
     assign uio_oe = 8'hFF;
 
     wire _unused = &{ui_in[7:3], uio_in, ena, 1'b0};
@@ -43,17 +27,13 @@ module tt_um_rock_paper_scissors (
 
     wire [1:0] player_in = ui_in[1:0];
     wire       play_btn  = ui_in[2];
-    wire       play_edge = play_btn & ~play_prev;   // rising edge = new play
+    wire       play_edge = play_btn & ~play_prev;   
 
-    // 8-bit Fibonacci LFSR, free-running for the chip's "randomness"
     wire lfsr_fb = lfsr[7] ^ lfsr[5] ^ lfsr[4] ^ lfsr[3];
 
-    // Map two raw LFSR bits onto {Rock, Paper, Scissors}; fold the unused
-    // 00 case into Rock so the chip never picks an invalid move.
     wire [1:0] cpu_raw = lfsr[1:0];
     wire [1:0] cpu_pick = (cpu_raw == NONE) ? ROCK : cpu_raw;
 
-    // player wins if: rock beats scissors, paper beats rock, scissors beats paper
     wire player_wins = (player_in == ROCK     && cpu_pick == SCISSORS) ||
                         (player_in == PAPER    && cpu_pick == ROCK)     ||
                         (player_in == SCISSORS && cpu_pick == PAPER);
@@ -66,10 +46,10 @@ module tt_um_rock_paper_scissors (
             result        <= 2'b00;
             win_cnt       <= 4'd0;
             lose_cnt      <= 4'd0;
-            lfsr          <= 8'hA5;   // non-zero seed
+            lfsr          <= 8'hA5;  
             play_prev     <= 1'b0;
         end else begin
-            lfsr      <= {lfsr[6:0], lfsr_fb};   // keep spinning every cycle
+            lfsr      <= {lfsr[6:0], lfsr_fb};  
             play_prev <= play_btn;
 
             if (play_edge && player_in != NONE) begin
